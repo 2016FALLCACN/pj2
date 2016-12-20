@@ -6,6 +6,7 @@ module EXMEM
 	RegData_i,
 	MemData_i,
 	RegAddr_i,
+	Stall_i,
 	WB_o,
 	MemRead_o,
 	MemWrite_o,
@@ -29,12 +30,22 @@ reg	MemRead_o, MemWrite_o,
 always @ (posedge clk_i) begin
 //	$display("[EXMEM]M_i[0] = %b, M_i[1] = %b\n", M_i[0], M_i[1]);
 //	$display("[EXMEM]WB_i[0] = %b, WB_i[1] = %b\n", WB_i[0], WB_i[1]);
-	MemRead_o <= M_i[0];
-	MemWrite_o <= M_i[1];
-	WB_o <= WB_i;
-	RegAddr_o <= RegAddr_i;
-	RegData_o <= RegData_i;
-	MemData_o <= MemData_i;
+	if (Stall_i) begin
+		MemRead_o <= MemRead_o;
+		MemWrite_o <= MemWrite_o;
+		WB_o <= WB_o;
+		RegAddr_o <= RegAddr_o;
+		RegData_o <= RegData_o;
+		MemData_o <= MemData_o;
+	end
+	else begin
+		MemRead_o <= M_i[0];
+		MemWrite_o <= M_i[1];
+		WB_o <= WB_i;
+		RegAddr_o <= RegAddr_i;
+		RegData_o <= RegData_i;
+		MemData_o <= MemData_i;
+	end
 end
 
 endmodule

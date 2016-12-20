@@ -11,6 +11,7 @@ module IDEX
 	RegAddrRs_i,
 	RegAddrRt_i,
 	RegAddrRd_i,
+        Stall_i,
 	WB_o,
 	M_o,
 	ALUSrc_o,
@@ -44,17 +45,33 @@ reg [4:0] RegAddrRs_o, RegAddrRt_o, RegAddrRd_o;
 reg [31:0] PC_o, RegData1_o, RegData2_o, SignExt_o;
 
 always @ (posedge clk_i) begin
-	WB_o <= WB_i;
-	M_o <= M_i;
-	ALUSrc_o <= EX_i[0];
-	ALUOp_o <= EX_i[2:1];
-	RegDst_o <= EX_i[3];
-	PC_o <= PC_i;
-	RegData1_o <= RegData1_i;
-	RegData2_o <= RegData2_i;
-	SignExt_o <= SignExt_i;
-	RegAddrRs_o <= RegAddrRs_i;
-	RegAddrRt_o <= RegAddrRt_i;
-	RegAddrRd_o <= RegAddrRd_i;
+	if (Stall_i) begin
+		WB_o <= WB_o;
+		M_o <= M_o;
+		ALUSrc_o <= ALUSrc_o;
+		ALUOp_o <= ALUOp_o;
+		RegDst_o <= RegDst_o;
+		PC_o <= PC_o;
+		RegData1_o <= RegData1_o;
+		RegData2_o <= RegData2_o;
+		SignExt_o <= SignExt_o;
+		RegAddrRs_o <= RegAddrRs_o;
+		RegAddrRt_o <= RegAddrRt_o;
+		RegAddrRd_o <= RegAddrRd_o;
+	end
+	else begin
+		WB_o <= WB_i;
+		M_o <= M_i;
+		ALUSrc_o <= EX_i[0];
+		ALUOp_o <= EX_i[2:1];
+		RegDst_o <= EX_i[3];
+		PC_o <= PC_i;
+		RegData1_o <= RegData1_i;
+		RegData2_o <= RegData2_i;
+		SignExt_o <= SignExt_i;
+		RegAddrRs_o <= RegAddrRs_i;
+		RegAddrRt_o <= RegAddrRt_i;
+		RegAddrRd_o <= RegAddrRd_i;
+	end
 end
 endmodule

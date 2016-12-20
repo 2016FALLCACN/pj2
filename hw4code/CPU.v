@@ -3,6 +3,13 @@ module CPU
     clk_i, 
     rst_i,
     start_i
+
+    mem_data_i,
+    mem_ack_i,
+    mem_data_o,
+    mem_addr_o,
+    mem_enable_o,
+    mem_write_o
 );
 
 // Ports
@@ -10,21 +17,33 @@ input               clk_i;
 input               rst_i;
 input               start_i;
 
+//
+// to Data Memory Interface
+//
+input   [255:0]         mem_data_i;
+input                   mem_ack_i;
+output  [255:0]         mem_data_o;
+output  [31:0]          mem_addr_o;
+output                  mem_enable_o;
+output                  mem_write_o;
+
 wire	[31:0] 		wire_pc;
 wire	[31:0]		wire_pc_ret;
 wire	[31:0]		wire_ifid_pc_ret;
 wire	[31:0]		wire_inst;
 wire	[31:0]		wire_ifid_inst;
-wire				wire_reg_dst; // from Control
-wire				wire_reg_wr; // from Control
-wire				wire_alu_src; // from Control
-wire				wire_ctrl_mtr; // from Control to mux32 WBSrc
-wire				wire_ctrl_mw; // from Control to Data_Memory
-wire				wire_ctrl_mr; // from Control to Data_Memory
-wire				wire_ctrl_br; // from Control to AND_Branch
-wire				wire_ctrl_j; // from Control to MUX_Jump
-wire				wire_zero; // from EQ to AND_Branch
-wire				wire_isbr; // from AND_Branch to MUX_Branch
+
+wire			wire_reg_dst; // from Control
+wire			wire_reg_wr; // from Control
+wire			wire_alu_src; // from Control
+wire			wire_ctrl_mtr; // from Control to mux32 WBSrc
+wire			wire_ctrl_mw; // from Control to Data_Memory
+wire			wire_ctrl_mr; // from Control to Data_Memory
+wire			wire_ctrl_br; // from Control to AND_Branch
+wire			wire_ctrl_j; // from Control to MUX_Jump
+wire			wire_zero; // from EQ to AND_Branch
+wire			wire_isbr; // from AND_Branch to MUX_Branch
+
 wire	[1:0]		wire_alu_op; // from Control
 wire	[2:0]		wire_alu_ctrl; // from ALU_Control
 wire	[4:0]		wire_wr_reg; // from MUX5
@@ -72,14 +91,16 @@ wire	[31:0]		wire_fw_out1;
 wire	[31:0]		wire_fw_out2;
 
 
-wire 				wire_pc_stall;
-wire 				wire_ifid_stall;
-wire 				wire_mux8_stall;
+wire 			wire_pc_stall;
+wire 			wire_ifid_stall;
+wire 			wire_mux8_stall;
 wire 	[7:0]		wire_mux8_data_o;
 
-wire 				wire_flush;
+wire 			wire_flush;
 
-
+wire                    wire_dcache_stall;
+wire                    wire_or_pc_stall;
+wire                    wire_or_ifid_stall;
 
 AND AND_Branch(
 	.data1_i(wire_ctrl_br),
@@ -107,11 +128,17 @@ MUX32 MUX_Jump(
     .data_o     (wire_mux32_j)
 );
 
+OR OR_PCstall(
+	.data1_i(wire_pc_stall),
+	.data2_i(wire_dcache_stall),
+	.or_o(wire_or_pc_stall)
+);
+
 PC PC(
     .clk_i      (clk_i),
     .rst_i      (rst_i),
     .start_i    (start_i),
-    .stall_i 	(wire_pc_stall),
+    .stall_i 	(wire_or_pc_stall),
     .pc_i       (wire_mux32_j),
     .pc_o       (wire_pc)
 );
@@ -127,9 +154,15 @@ Instruction_Memory Instruction_Memory(
     .instr_o    (wire_inst)
 );
 
+OR OR_IFIDstall(
+	.data1_i(wire_ifid_stall),
+	.data2_i(wire_dcache_stall),
+	.or_o(wire_or_ifid_stall)
+);
+
 IFID IFID(
     .clk_i		(clk_i),
-    .Stall_i		(wire_ifid_stall),
+    .Stall_i		(wire_or_ifid_stall),
     .PC_i		(wire_pc_ret),
     .instruction_i	(wire_inst),
     .Flush_i		(wire_flush),
@@ -223,6 +256,7 @@ IDEX IDEX(
 	.RegAddrRs_i(wire_ifid_inst[25:21]),
 	.RegAddrRt_i(wire_ifid_inst[20:16]),
 	.RegAddrRd_i(wire_ifid_inst[15:11]),
+	.Stall_i(wire_dcache_stall),
 	.WB_o(wire_idex_wb),
 	.M_o(wire_idex_m),
 	.ALUSrc_o(wire_idex_ctrl_alusrc),
@@ -299,6 +333,7 @@ EXMEM EXMEM(
 	.RegAddr_i(wire_wr_reg),
 	.RegData_i(wire_alu_out),
 	.MemData_i(wire_fw_out2),
+	.Stall_i(wire_dcache_stall),
 	.MemRead_o(wire_exmem_ctrl_mr),
 	.MemWrite_o(wire_exmem_ctrl_mw),
 	.WB_o(wire_exmem_wb),
@@ -307,6 +342,7 @@ EXMEM EXMEM(
 	.MemData_o(wire_exmem_data2)
 );
 
+/*
 Data_Memory Data_Memory(
 	.addr_i(wire_exmem_alu_out),
 	.data_i(wire_exmem_data2),
@@ -314,6 +350,29 @@ Data_Memory Data_Memory(
 	.MemRead_i(wire_exmem_ctrl_mr),
 	.data_o(wire_mem_out)
 );
+*/
+
+dcache_top dcache {
+    //System clock, reset and stall
+    .clk_i(clk_i),
+    .rst_i(rst_i),
+
+    // to Data Memory Interface
+    .mem_data_i(mem_data_i),
+    .mem_ack_i(mem_ack_i),
+    .mem_data_o(mem_data_o),
+    .mem_addr_o(mem_addr_o),
+    .mem_enable_o(mem_enable_o),
+    .mem_write_o(mem_write_o),
+
+    // to CPU Interface
+    .p1_addr_i(wire_exmem_alu_out),
+    .p1_data_i(wire_exmem_data2),
+    .p1_MemWrite_i(wire_exmem_ctrl_mw),
+    .p1_MemRead_i(wire_exmem_ctrl_mr),
+    .p1_data_o(wire_mem_out),
+    .p1_stall_o(wire_dcache_stall)
+};
 
 MEMWB MEMWB(
 	.clk_i(clk_i),
@@ -321,6 +380,7 @@ MEMWB MEMWB(
 	.MemData_i(wire_mem_out),
 	.RegData_i(wire_exmem_alu_out),
 	.RegAddr_i(wire_exmem_wr_reg),
+	.Stall_i(wire_dcache_stall),
 	.RegWrite_o(wire_memwb_ctrl_rw),
 	.MemtoReg_o(wire_memwb_ctrl_mtr),
 	.MemData_o(wire_memwb_mem_out),
