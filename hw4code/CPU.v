@@ -352,7 +352,7 @@ Data_Memory Data_Memory(
 );
 */
 
-dcache_top dcache {
+dcache_top dcache (
     //System clock, reset and stall
     .clk_i(clk_i),
     .rst_i(rst_i),
@@ -372,7 +372,7 @@ dcache_top dcache {
     .p1_MemRead_i(wire_exmem_ctrl_mr),
     .p1_data_o(wire_mem_out),
     .p1_stall_o(wire_dcache_stall)
-};
+);
 
 MEMWB MEMWB(
 	.clk_i(clk_i),
