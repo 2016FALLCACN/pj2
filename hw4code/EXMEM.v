@@ -16,6 +16,7 @@ module EXMEM
 );
 
 input clk_i;
+input Stall_i;
 input [1:0] WB_i, M_i;
 input [4:0] RegAddr_i;
 input [31:0] RegData_i, MemData_i;

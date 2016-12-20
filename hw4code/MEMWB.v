@@ -14,6 +14,7 @@ module MEMWB
 );
 
 input clk_i;
+input Stall_i;
 input [1:0] WB_i;
 input [31:0] MemData_i, RegData_i;
 input [4:0] RegAddr_i;

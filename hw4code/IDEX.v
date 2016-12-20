@@ -27,6 +27,7 @@ module IDEX
 );
 
 input clk_i;
+input Stall_i;
 input [1:0] WB_i, M_i;
 input [3:0] EX_i;
 input [4:0] RegAddrRs_i, RegAddrRt_i, RegAddrRd_i;
