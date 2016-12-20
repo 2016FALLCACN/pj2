@@ -2,7 +2,7 @@ module CPU
 (
     clk_i, 
     rst_i,
-    start_i
+    start_i,
 
     mem_data_i,
     mem_ack_i,
