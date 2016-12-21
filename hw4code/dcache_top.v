@@ -65,7 +65,7 @@ wire	[255:0]		sram_cache_data;
 wire				sram_valid;
 //<-------useful
 wire				sram_dirty;
-//<-------useful
+//writeback <-------useful
 // controller
 parameter 		STATE_IDLE = 3'h0,
 			STATE_READMISS = 3'h1,
@@ -93,14 +93,14 @@ wire	[255:0]		r_hit_data;
 //<-------useful
 wire	[21:0]		sram_tag;
 //from dcache, compare with p1_tag <-------useful
-wire				    hit; // have to implement
-//<-------useful
+wire				    hit;
+//cache tag hit <-------useful
 reg		[255:0]		w_hit_data;
 //<-------useful
 wire				    write_hit;
 wire				    p1_req;
 reg		[31:0]		p1_data;
-//<-------useful
+//assign p1_data to p1_data_o<-------useful
 
 // project1 interface
 assign 	p1_req     = p1_MemRead_i | p1_MemWrite_i;
@@ -115,16 +115,17 @@ assign	p1_data_o  = p1_data;
 assign	sram_valid = sram_cache_tag[23]; //from dcache tag
 assign	sram_dirty = sram_cache_tag[22]; //from dcache tag
 assign	sram_tag   = sram_cache_tag[21:0]; // from dcache tag
+// from controller to dcache_tag and dcache_data
 assign	cache_sram_index  = p1_index;
 assign	cache_sram_enable = p1_req;
-assign	cache_sram_write  = cache_we | write_hit;
+assign	cache_sram_write  = cache_we | write_hit; // what is cache_we??????
 assign	cache_sram_tag    = {1'b1, cache_dirty, p1_tag};	
 assign	cache_sram_data   = (hit) ? w_hit_data : mem_data_i;
 
 // memory interface
 assign	mem_enable_o = mem_enable;
 assign	mem_addr_o   = (write_back) ? {sram_tag, p1_index, 5'b0} : {p1_tag, p1_index, 5'b0};
-assign	mem_data_o   = sram_cache_data;
+assign	mem_data_o   = sram_cache_data;// write to data memory
 assign	mem_write_o  = mem_write;
 
 assign	write_hit    = hit & p1_MemWrite_i;
@@ -139,14 +140,13 @@ assign hit = (p1_tag == sram_tag)? 1'd1: 1'd0;
 always@(p1_offset or r_hit_data) begin
 	//!!! add you code here! (p1_data=...?)
 	//p1_data get from r_hit_data? or memory
+	p1_data <= r_hit_data[];
 end
-
 
 // write data :  32-bit to 256-bit
 always@(p1_offset or r_hit_data or p1_data_i) begin
 	//!!! add you code here! (w_hit_data=...?)
 end
-
 
 // controller 
 always@(posedge clk_i or negedge rst_i) begin
