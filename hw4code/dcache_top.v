@@ -118,7 +118,8 @@ assign	sram_tag   = sram_cache_tag[21:0]; // from dcache tag
 // from controller to dcache_tag and dcache_data
 assign	cache_sram_index  = p1_index;
 assign	cache_sram_enable = p1_req;
-assign	cache_sram_write  = cache_we | write_hit; // what is cache_we??????
+assign	cache_sram_write  = cache_we | write_hit; 
+// what is cache_we? move data from memory?
 assign	cache_sram_tag    = {1'b1, cache_dirty, p1_tag};	
 assign	cache_sram_data   = (hit) ? w_hit_data : mem_data_i;
 
@@ -143,17 +144,33 @@ reg [255:0] r_hit_data_shift;
 always@(p1_offset or r_hit_data) begin
 	//!!! add you code here! (p1_data=...?)
 	//p1_data get from r_hit_data? or memory
-	r_hit_data_shift = r_hit_data >> (8 * p1_offset);
-	p1_data = r_hit_data_shift[31:0];
+//	r_hit_data_shift = r_hit_data >> (8 * p1_offset);
+//	p1_data = r_hit_data_shift[31:0];
+	p1_data <= r_hit_data[p1_offset*8+31 -: 32];
 end
 
+integer i, j;
 // write data :  32-bit to 256-bit
 always@(p1_offset or r_hit_data or p1_data_i) begin
 	//!!! add you code here! (w_hit_data=...?)
-	w_hit_data <= ;	
+	w_hit_data = r_hit_data;
+	for (i = 0; i < 256; i = i + 1) begin
+		if (i == p1_offset * 8) begin
+			for (j = 0; j < 32; j = j + 1) begin
+				w_hit_data[i+j] = p1_data_i[j];
+			end
+			i = i + 31;
+		end
+		else begin
+			w_hit_data[i] = w_hit_data[i];
+		end
+	end
 end
 
 // controller 
+//assign mem_addr_o = (write_back) ? {sram_tag, p1_index, 5'b0} : {p1_tag, p1_index, 5'b0};
+//assign cache_sram_write  = cache_we | write_hit; 
+// what is cache_we? move data from memory?
 always@(posedge clk_i or negedge rst_i) begin
 	if(~rst_i) begin
 		state      <= STATE_IDLE;
@@ -165,7 +182,7 @@ always@(posedge clk_i or negedge rst_i) begin
 	else begin
 		case(state)		
 			STATE_IDLE: begin
-			//p1_req is set when read or write cache
+				//p1_req is set when read or write cache
 				if(p1_req && !hit) begin	
 					//wait for request
 					state <= STATE_MISS;
@@ -175,25 +192,37 @@ always@(posedge clk_i or negedge rst_i) begin
 				end
 			end
 			STATE_MISS: begin
-			//sram_dirty is sram_cache_tag[22];
+				//sram_dirty is sram_cache_tag[22];
+				//write back if dirty
+					//!!! add you code here! 
 				if(sram_dirty) begin		
-			//write back if dirty
-	                //!!! add you code here! 
+					mem_enable <= 1'b1;
+					mem_write <= 1'b1;
+					write_back <= 1'b1;
+					cache_we <= 1'b0;
 					state <= STATE_WRITEBACK;
 				end
 				else begin		
-			//write allocate: write miss = 
-			//read miss + write hit; 
-			//read miss = read miss + read hit
-	                //!!! add you code here! 
+					//write allocate: write miss = 
+					//read miss + write hit; 
+					//read miss = read miss + read hit
+					//!!! add you code here! 
+					mem_enable <= 1'b1;
+					mem_write <= 1'b0;
+					write_back <= 1'b0;
+					cache_we <= 1'b0;
 					state <= STATE_READMISS;
 				end
 			end
 			STATE_READMISS: begin
-			//mem_ack_i is gotten from Data Memory
+				//mem_ack_i is gotten from Data Memory
 				if(mem_ack_i) begin	
-			//wait for data memory acknowledge
-	                //!!! add you code here! 
+					//wait for data memory acknowledge
+					//!!! add you code here! 
+					mem_enable <= 1'b0;
+					mem_write <= 1'b0;
+					write_back <= 1'b0;
+					cache_we <= 1'b1;
 					state <= STATE_READMISSOK;
 				end
 				else begin
@@ -202,14 +231,22 @@ always@(posedge clk_i or negedge rst_i) begin
 			end
 			STATE_READMISSOK: begin			
 			//mem_ack_i is gotten from Data Memory
-	                //!!! add you code here! 
+			//!!! add you code here! 
+				mem_enable <= 1'b0;
+				mem_write <= 1'b0;
+				write_back <= 1'b0;
+				cache_we <= 1'b0;
 				state <= STATE_IDLE;
 			end
 			STATE_WRITEBACK: begin
-				//get from Data Memory
+			//get from Data Memory
 				if(mem_ack_i) begin
-			//wait for data memory acknowledge
-	                //!!! add you code here! 
+				//wait for data memory acknowledge
+				//!!! add you code here! 
+					mem_enable <= 1'b0;
+					mem_write <= 1'b0;
+					write_back <= 1'b0;
+					cache_we <= 1'b0;
 					state <= STATE_READMISS;
 				end
 				else begin
