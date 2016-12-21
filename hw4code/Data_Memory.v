@@ -29,10 +29,10 @@ reg					    ok;
 reg		[255:0]		data;
 wire	[26:0]		addr;
 
-parameter STATE_IDLE			= 3'h0,
-					STATE_WAIT			= 3'h1,
-					STATE_ACK			  = 3'h2,					
-					STATE_FINISH		= 3'h3;
+parameter STATE_IDLE = 3'h0,
+	  STATE_WAIT = 3'h1,
+	  STATE_ACK = 3'h2,					
+	  STATE_FINISH = 3'h3;
 
 reg		[1:0]		state;
 

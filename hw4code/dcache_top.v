@@ -143,10 +143,10 @@ reg [255:0] r_hit_data_shift;
 // read data :  256-bit to 32-bit
 always@(p1_offset or r_hit_data) begin
 	//!!! add you code here! (p1_data=...?)
-	//p1_data get from r_hit_data? or memory
-//	r_hit_data_shift = r_hit_data >> (8 * p1_offset);
-//	p1_data = r_hit_data_shift[31:0];
-	p1_data <= r_hit_data[p1_offset*8+31 -: 32];
+//p1_data get from r_hit_data? or memory
+	r_hit_data_shift = r_hit_data >> (8 * p1_offset);
+	p1_data = r_hit_data_shift[31:0];
+//	p1_data <= r_hit_data[p1_offset*8+31 -: 32];
 end
 
 integer i, j;
@@ -243,7 +243,7 @@ always@(posedge clk_i or negedge rst_i) begin
 				if(mem_ack_i) begin
 				//wait for data memory acknowledge
 				//!!! add you code here! 
-					mem_enable <= 1'b0;
+					mem_enable <= 1'b1;
 					mem_write <= 1'b0;
 					write_back <= 1'b0;
 					cache_we <= 1'b0;
