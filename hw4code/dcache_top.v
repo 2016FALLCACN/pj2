@@ -135,8 +135,9 @@ assign	cache_dirty  = write_hit;
 // tag comparator
 // r_hit_data: 256 bits
 //!!! add you code here!  (hit=...?,  r_hit_data=...?)
-assign hit = (sram_valid && !sram_dirty && p1_tag == sram_tag)? 1'd1: 1'd0;
-assign r_hit_data = (hit)? sram_cache_data: 256'b0;
+// sram_cache_data <--- cache_sram_enable(when p1_req is set)
+assign hit = (sram_valid && p1_tag == sram_tag)? 1'd1: 1'd0;
+assign r_hit_data = (hit)?sram_cache_data: 256'b0;
 
 reg [255:0] r_hit_data_shift;
 
@@ -203,8 +204,8 @@ always@(posedge clk_i or negedge rst_i) begin
 					state <= STATE_WRITEBACK;
 				end
 				else begin		
-					//write allocate: write miss = 
-					//read miss + write hit; 
+					//write allocate: 
+					//write miss = read miss + write hit; 
 					//read miss = read miss + read hit
 					//!!! add you code here! 
 					mem_enable <= 1'b1;
